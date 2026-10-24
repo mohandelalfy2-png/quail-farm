@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6a4c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>دفتر مزرعة السمان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky header (farm switcher + tabs), one working column; forms sit beside the records they create */
+:root {
+  --bg: #f3f4ee;
+  --surface: #ffffff;
+  --surface-2: #e9ebe2;
+  --ink: #1d231b;
+  --muted: #5d6656;
+  --line: #d4d8ca;
+  --accent: #2f6a4c;
+  --accent-ink: #ffffff;
+  --egg: #a86a12;
+  --egg-soft: #f6ead3;
+  --good: #2f7d4f;
+  --warn: #9a6400;
+  --warn-soft: #fbefd5;
+  --bad: #b23a2a;
+  --bad-soft: #f8e0db;
+  --font-display: "Readex Pro", "Segoe UI", Tahoma, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121611; --surface: #1b2019; --surface-2: #252b22; --ink: #e7ebe1; --muted: #a3ad99;
+    --line: #343b30; --accent: #74c49a; --accent-ink: #0e1a12; --egg: #e3a94a; --egg-soft: #3a2e17;
+    --good: #74c49a; --warn: #e3a94a; --warn-soft: #3a2e17; --bad: #f08a78; --bad-soft: #3d201b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121611; --surface: #1b2019; --surface-2: #252b22; --ink: #e7ebe1; --muted: #a3ad99;
+  --line: #343b30; --accent: #74c49a; --accent-ink: #0e1a12; --egg: #e3a94a; --egg-soft: #3a2e17;
+  --good: #74c49a; --warn: #e3a94a; --warn-soft: #3a2e17; --bad: #f08a78; --bad-soft: #3d201b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+body { margin: 0; padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.app { max-width: 1100px; margin: 0 auto; }
+.pad { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px 8px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-family: var(--font-display); font-size: 1.25rem; margin: 0; font-weight: 700; }
+.egg-mark { width: 26px; height: 32px; flex: none; }
+.today { color: var(--muted); font-size: .9rem; }
+.sync { font-size: .8rem; padding: 2px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.sync.ok { color: var(--good); }
+.farmbar { display: flex; gap: 6px; flex-wrap: wrap; padding-block: 0 8px; align-items: center; }
+.farmbar .lbl { color: var(--muted); font-size: .82rem; margin-inline-end: 4px; }
+.farmbar button { font: inherit; font-size: .88rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 3px 12px; border-radius: 99px; cursor: pointer; }
+.farmbar button[aria-pressed="true"] { border-color: var(--egg); background: var(--egg-soft); color: var(--ink); font-weight: 600; }
+nav.tabs { display: flex; gap: 4px; padding-block: 0 8px; flex-wrap: wrap; }
+nav.tabs button { font: inherit; font-weight: 500; border: 0; background: transparent; color: var(--muted); padding: 6px 11px; border-radius: 8px; cursor: pointer; }
+nav.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+nav.tabs button:hover:not([aria-selected="true"]) { background: var(--surface-2); color: var(--ink); }
+
+main { padding-block: 18px 48px; display: grid; gap: 18px; }
+section[data-panel] { display: grid; gap: 18px; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 500; font-size: 1rem; margin: 0; }
+.sub { color: var(--muted); font-size: .88rem; margin: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.cols { display: grid; grid-template-columns: minmax(0, 370px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.stack { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 820px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 2px; align-content: start; }
+.panel .kpi { background: var(--bg); }
+.kpi .lbl { color: var(--muted); font-size: .82rem; }
+.kpi .val { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.kpi .note { color: var(--muted); font-size: .8rem; }
+.kpi.egg .val { color: var(--egg); }
+.kpi.bad .val { color: var(--bad); }
+
+.alerts { display: grid; gap: 8px; }
+.alert { display: flex; gap: 10px; align-items: baseline; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); font-size: .92rem; }
+.alert::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); transform: translateY(-1px); }
+.alert.warn { background: var(--warn-soft); } .alert.warn::before { background: var(--warn); }
+.alert.bad { background: var(--bad-soft); } .alert.bad::before { background: var(--bad); }
+.alert.ok::before { background: var(--good); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; align-content: start; }
+.panel .card { background: var(--bg); }
+.card > header { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.card .meta { color: var(--muted); font-size: .84rem; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+.stats.sep { border-top: 1px solid var(--line); padding-top: 8px; }
+.stat .k { color: var(--muted); font-size: .76rem; display: block; }
+.stat .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pill { font-size: .75rem; padding: 1px 9px; border-radius: 99px; white-space: nowrap; border: 1px solid currentColor; }
+.pill.meat, .pill.good { color: var(--accent); }
+.pill.layer, .pill.setup { color: var(--egg); }
+.pill.closed { color: var(--muted); }
+.pill.bad { color: var(--bad); }
+.pill.warn { color: var(--warn); }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.due { font-size: .88rem; }
+.due.bad { color: var(--bad); font-weight: 600; }
+details.hist summary { cursor: pointer; color: var(--muted); font-size: .84rem; }
+details.hist ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; }
+details.hist li { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px dashed var(--line); padding-block: 3px; }
+.card.selected { outline: 2px solid var(--egg); }
+
+form { display: grid; gap: 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+label { display: grid; gap: 4px; font-size: .86rem; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg label { display: block; text-align: center; padding: 7px; cursor: pointer; color: var(--ink); font-size: .9rem; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.plan-box { display: grid; gap: 10px; padding: 12px; border-radius: 8px; background: var(--egg-soft); }
+.plan-box label { color: var(--ink); }
+.hint { font-size: .8rem; color: var(--muted); margin: 0; }
+.hint.warn { color: var(--warn); }
+button.btn { font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 9px 16px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+button.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+button.sm { font: inherit; font-size: .8rem; border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 6px; padding: 2px 9px; cursor: pointer; }
+button.sm.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.sm.danger { color: var(--bad); }
+button.sm.armed { background: var(--bad); color: var(--surface); border-color: var(--bad); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: start; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: .8rem; }
+td.num { font-variant-numeric: tabular-nums; }
+tr.done td { color: var(--muted); }
+tfoot td { font-weight: 600; border-bottom: 0; }
+.who { color: var(--muted); font-size: .8rem; }
+.head-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; justify-content: space-between; }
+.head-row label { min-width: 150px; }
+
+.banner { padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--ink); }
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); display: grid; gap: 10px; justify-items: center; }
+.empty strong { color: var(--ink); font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; }
+.steps { margin: 0; padding-inline-start: 20px; text-align: start; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: .9rem; z-index: 20; max-width: calc(100% - 32px); }
+.money-pos { color: var(--good); } .money-neg { color: var(--bad); }
+@media (max-width: 480px) { .grid2 { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gate { min-height: 100vh; display: grid; place-items: center; padding-block: 24px; }
+.gate .panel { width: min(100%, 380px); }
+.top-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.me { font-size: .82rem; color: var(--muted); }
+.me button { font: inherit; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
+.sync.err { color: var(--bad); }
+</style>
+</head>
+<body>
+
+<div class="gate pad" id="gate" dir="rtl" lang="ar" hidden>
+  <form class="panel" id="f-gate">
+    <svg class="egg-mark" viewBox="0 0 26 32" aria-hidden="true">
+      <path d="M13 1C6.5 1 1 11 1 19.5 1 26.5 6.4 31 13 31s12-4.5 12-11.5C25 11 19.5 1 13 1Z" fill="var(--egg-soft)" stroke="var(--egg)" stroke-width="1.5"/>
+      <circle cx="9" cy="12" r="2.2" fill="var(--egg)"/><circle cx="17" cy="18" r="2.6" fill="var(--egg)"/>
+    </svg>
+    <div><h2>دفتر مزرعة السمان</h2><p class="sub">اكتب الرقم السري بتاع المزرعة واسمك. التليفون هيفتكرهم بعد كده.</p></div>
+    <label>الرقم السري<input type="password" id="g-pin" inputmode="numeric" autocomplete="current-password" required></label>
+    <label>اسمك<input type="text" id="g-name" required placeholder="مثلاً: محمد"></label>
+    <p class="hint warn" id="g-err" hidden></p>
+    <button class="btn" type="submit" id="g-btn">دخول</button>
+  </form>
+</div>
+
+<div class="app" id="app" dir="rtl" lang="ar" hidden>
+  <header class="top">
+    <div class="pad">
+      <div class="top-row">
+        <div class="brand">
+          <svg class="egg-mark" viewBox="0 0 26 32" aria-hidden="true">
+            <path d="M13 1C6.5 1 1 11 1 19.5 1 26.5 6.4 31 13 31s12-4.5 12-11.5C25 11 19.5 1 13 1Z" fill="var(--egg-soft)" stroke="var(--egg)" stroke-width="1.5"/>
+            <circle cx="9" cy="12" r="2.2" fill="var(--egg)"/><circle cx="16" cy="9" r="1.4" fill="var(--egg)"/>
+            <circle cx="17" cy="18" r="2.6" fill="var(--egg)"/><circle cx="8" cy="22" r="1.6" fill="var(--egg)"/>
+            <circle cx="13" cy="26" r="1.2" fill="var(--egg)"/>
+          </svg>
+          <div>
+            <h1>دفتر مزرعة السمان</h1>
+            <span class="today" id="today-label"></span>
+          </div>
+        </div>
+        <div class="top-tools">
+          <span class="me" id="me"></span>
+          <button class="sm" type="button" id="refresh">تحديث</button>
+          <span class="sync" id="sync">بيحمّل…</span>
+        </div>
+      </div>
+      <div class="farmbar" id="farmbar"></div>
+      <nav class="tabs" role="tablist">
+        <button data-tab="home" aria-selected="true">الرئيسية</button>
+        <button data-tab="daily">التسجيل اليومي</button>
+        <button data-tab="batches">الدفعات</button>
+        <button data-tab="feed">العلف</button>
+        <button data-tab="expenses">المصاريف والأقساط</button>
+        <button data-tab="sales">المبيعات</button>
+        <button data-tab="vaccines">التحصينات</button>
+        <button data-tab="farms">المزارع</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="pad">
+    <div class="banner" id="banner" hidden></div>
+
+    <!-- HOME -->
+    <section data-panel="home">
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2>محتاج انتباه</h2>
+        <div class="alerts" id="alerts"></div>
+      </div>
+      <div class="panel">
+        <h2>الدفعات الشغالة</h2>
+        <div id="home-batches"></div>
+      </div>
+      <div class="panel">
+        <div><h2>فلوس الشهر ده</h2><p class="sub">اللي دخل فعلاً واللي اتدفع فعلاً (كاش + أقساط ومقدمات اتدفعت).</p></div>
+        <div id="month"></div>
+      </div>
+    </section>
+
+    <!-- DAILY -->
+    <section data-panel="daily" hidden>
+      <div class="cols">
+        <div class="panel">
+          <div><h2>تسجيل يوم</h2><p class="sub">كل دفعة ليها تسجيل واحد في اليوم. لو سجلت تاني لنفس اليوم هيتعدّل.</p></div>
+          <form id="f-daily">
+            <div class="grid2">
+              <label>التاريخ<input type="date" id="d-date" required></label>
+              <label>الدفعة<select id="d-batch" required></select></label>
+            </div>
+            <div class="grid2">
+              <label>النافق (عدد)<input type="number" id="d-dead" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+              <label>العلف المصروف (كجم)<input type="number" id="d-feed" min="0" step="0.1" inputmode="decimal" placeholder="0"></label>
+            </div>
+            <div class="grid2">
+              <label id="w-eggs">البيض (عدد البيضات)<input type="number" id="d-eggs" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+              <label id="w-weight">متوسط الوزن (جرام)<input type="number" id="d-weight" min="0" step="1" inputmode="numeric" placeholder="اختياري"></label>
+            </div>
+            <label>ملاحظات<input type="text" id="d-note" placeholder="مثلاً: إسهال خفيف، الحرارة عالية"></label>
+            <p class="hint warn" id="d-exists" hidden>فيه تسجيل لليوم ده بالفعل. الحفظ هيعدّله.</p>
+            <button class="btn" type="submit">حفظ اليوم</button>
+          </form>
+        </div>
+        <div class="panel">
+          <div class="head-row">
+            <h2>السجل اليومي</h2>
+            <label>عرض دفعة<select id="d-filter"></select></label>
+          </div>
+          <div class="table-wrap" id="daily-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BATCHES -->
+    <section data-panel="batches" hidden>
+      <div class="cols">
+        <div class="panel">
+          <div><h2>دفعة جديدة</h2><p class="sub">الدفعة هي مجموعة طيور دخلت مع بعض في عنبر واحد.</p></div>
+          <form id="f-batch">
+            <label class="farm-field">المزرعة<select class="farm-sel" id="b-farm"></select></label>
+            <label>اسم الدفعة<input type="text" id="b-name" required placeholder="مثلاً: دفعة 12 تسمين"></label>
+            <div class="grid2">
+              <label>النوع<select id="b-type"><option value="meat">تسمين</option><option value="layer">بياض</option></select></label>
+              <label>العنبر / المكان<input type="text" id="b-house" placeholder="عنبر 1"></label>
+            </div>
+            <div class="grid2">
+              <label>تاريخ الدخول<input type="date" id="b-start" required></label>
+              <label>العدد عند الدخول<input type="number" id="b-count" min="1" step="1" required inputmode="numeric"></label>
+            </div>
+            <label>عمر الطيور عند الدخول (يوم)<input type="number" id="b-age" min="0" step="1" value="1" inputmode="numeric"></label>
+            <p class="hint">ثمن الكتاكيت سجّله في "المصاريف والأقساط" تحت بند كتاكيت واختار الدفعة، كاش أو قسط.</p>
+            <button class="btn" type="submit">إضافة الدفعة</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>كل الدفعات</h2>
+          <div id="all-batches"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEED -->
+    <section data-panel="feed" hidden>
+      <div class="kpis" id="feed-kpis"></div>
+      <div class="cols">
+        <div class="panel">
+          <div><h2>استلام علف</h2><p class="sub">سجّل كل نقلة علف بتدخل المخزن. المصروف اليومي بيتخصم من التسجيل اليومي.</p></div>
+          <form id="f-feed">
+            <label class="farm-field">المزرعة<select class="farm-sel" id="fd-farm"></select></label>
+            <div class="grid2">
+              <label>التاريخ<input type="date" id="fd-date" required></label>
+              <label>نوع العلف<input type="text" id="fd-kind" list="feed-kinds" placeholder="بادي"></label>
+            </div>
+            <datalist id="feed-kinds"><option value="بادي"><option value="نامي"><option value="ناهي"><option value="بياض"></datalist>
+            <div class="grid2">
+              <label>عدد الشكاير<input type="number" id="fd-bags" min="0" step="0.5" required inputmode="decimal"></label>
+              <label>وزن الشكارة (كجم)<input type="number" id="fd-bagkg" min="1" step="0.5" value="50" inputmode="decimal"></label>
+            </div>
+            <div class="grid2">
+              <label>سعر الشكارة (جنيه)<input type="number" id="fd-price" min="0" step="1" required inputmode="decimal"></label>
+              <label>المورد<input type="text" id="fd-supplier" placeholder="اختياري"></label>
+            </div>
+            <div class="seg" role="radiogroup" aria-label="طريقة الدفع">
+              <label><input type="radio" name="fd-pay" value="cash" checked>كاش</label>
+              <label><input type="radio" name="fd-pay" value="credit">آجل / قسط</label>
+            </div>
+            <div class="plan-box" id="fd-plan" hidden></div>
+            <p class="hint" id="fd-total"></p>
+            <button class="btn" type="submit">حفظ الاستلام</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>نقلات العلف</h2>
+          <div class="table-wrap" id="feed-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPENSES & INSTALLMENTS -->
+    <section data-panel="expenses" hidden>
+      <div class="kpis" id="debt-kpis"></div>
+      <div class="cols">
+        <div class="stack">
+          <div class="panel" id="pay-panel" hidden>
+            <div><h2>تسجيل دفعة</h2><p class="sub" id="pay-for"></p></div>
+            <form id="f-pay">
+              <div class="grid2">
+                <label>التاريخ<input type="date" id="p-date" required></label>
+                <label>المبلغ (جنيه)<input type="number" id="p-amount" min="1" step="any" required inputmode="decimal"></label>
+              </div>
+              <label>ملاحظة<input type="text" id="p-note" placeholder="مثلاً: القسط التاني، تحويل"></label>
+              <p class="hint warn" id="p-warn" hidden></p>
+              <div class="row-actions">
+                <button class="btn" type="submit">حفظ الدفعة</button>
+                <button class="btn ghost" type="button" id="p-cancel">إلغاء</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <div><h2>مصروف أو شرا جديد</h2><p class="sub">أي حاجة اتصرفت: كتاكيت، بطاريات، تجهيزات، إيجار، تدفئة… كاش أو بالقسط.</p></div>
+            <form id="f-exp">
+              <label class="farm-field">المزرعة<select class="farm-sel" id="e-farm"></select></label>
+              <div class="grid2">
+                <label>التاريخ<input type="date" id="e-date" required></label>
+                <label>البند<select id="e-cat"></select></label>
+              </div>
+              <label>الوصف<input type="text" id="e-title" placeholder="مثلاً: بطاريات 5 أدوار - 8 وحدات"></label>
+              <div class="grid2">
+                <label>المبلغ الكلي (جنيه)<input type="number" id="e-amount" min="0" step="any" required inputmode="decimal"></label>
+                <label>على دفعة<select id="e-batch"></select></label>
+              </div>
+              <label>التاجر / المورد<input type="text" id="e-supplier" placeholder="اختياري"></label>
+              <div class="seg" role="radiogroup" aria-label="طريقة الدفع">
+                <label><input type="radio" name="e-pay" value="cash" checked>كاش</label>
+                <label><input type="radio" name="e-pay" value="credit">آجل / قسط</label>
+              </div>
+              <div class="plan-box" id="e-plan" hidden></div>
+              <label>ملاحظة<input type="text" id="e-note" placeholder="اختياري"></label>
+              <button class="btn" type="submit">حفظ</button>
+            </form>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <div class="head-row">
+              <h2>الأقساط والآجل</h2>
+              <label>عرض<select id="debt-filter"><option value="open">اللي لسه عليها فلوس</option><option value="all">الكل</option><option value="done">اللي خلصت</option></select></label>
+            </div>
+            <div id="debts"></div>
+          </div>
+          <div class="panel">
+            <h2>المصاريف حسب البند</h2>
+            <div class="table-wrap" id="cat-table"></div>
+          </div>
+          <div class="panel">
+            <div class="head-row">
+              <h2>كل المصاريف</h2>
+              <label>البند<select id="exp-filter"></select></label>
+            </div>
+            <div class="table-wrap" id="exp-table"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SALES -->
+    <section data-panel="sales" hidden>
+      <div class="cols">
+        <div class="panel">
+          <h2>بيع</h2>
+          <form id="f-sale">
+            <label class="farm-field">المزرعة<select class="farm-sel" id="s-farm"></select></label>
+            <div class="grid2">
+              <label>التاريخ<input type="date" id="s-date" required></label>
+              <label>الصنف<select id="s-kind">
+                <option value="birds">طيور (بالعدد)</option>
+                <option value="eggs">بيض (بالطبق)</option>
+                <option value="manure">سبلة</option>
+                <option value="other">حاجة تانية</option>
+              </select></label>
+            </div>
+            <label>من دفعة<select id="s-batch"></select></label>
+            <div class="grid2">
+              <label><span id="s-qty-lbl">العدد</span><input type="number" id="s-qty" min="0" step="any" required inputmode="decimal"></label>
+              <label><span id="s-price-lbl">سعر الطائر (جنيه)</span><input type="number" id="s-price" min="0" step="any" required inputmode="decimal"></label>
+            </div>
+            <label>العميل<input type="text" id="s-customer" placeholder="اختياري"></label>
+            <p class="hint" id="s-total"></p>
+            <button class="btn" type="submit">حفظ البيعة</button>
+          </form>
+        </div>
+        <div class="panel"><h2>المبيعات</h2><div class="table-wrap" id="sales-table"></div></div>
+      </div>
+    </section>
+
+    <!-- VACCINES -->
+    <section data-panel="vaccines" hidden>
+      <div class="cols">
+        <div class="panel">
+          <div><h2>ميعاد تحصين أو علاج</h2><p class="sub">التطبيق هينبّهك في الرئيسية قبل الميعاد بـ 3 أيام. الجرعات والمواعيد بإشراف الدكتور البيطري.</p></div>
+          <form id="f-vac">
+            <label>الدفعة<select id="v-batch" required></select></label>
+            <label>التحصين / العلاج<input type="text" id="v-name" list="vac-names" required placeholder="نيوكاسل"></label>
+            <datalist id="vac-names"><option value="نيوكاسل"><option value="إنفلونزا"><option value="مضاد كوكسيديا"><option value="مضاد حيوي"><option value="فيتامينات وأملاح"><option value="مطهر للمياه"></datalist>
+            <div class="grid2">
+              <label>الميعاد<input type="date" id="v-date" required></label>
+              <label>طريقة الإعطاء<select id="v-route"><option>مياه شرب</option><option>تقطير</option><option>حقن</option><option>رش</option><option>على العلف</option></select></label>
+            </div>
+            <label>ملاحظة<input type="text" id="v-note" placeholder="الجرعة، اسم الدوا…"></label>
+            <button class="btn" type="submit">إضافة للجدول</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>الجدول</h2>
+          <div class="table-wrap" id="vac-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FARMS -->
+    <section data-panel="farms" hidden>
+      <div class="cols">
+        <div class="panel">
+          <div><h2>مزرعة جديدة</h2><p class="sub">كل مزرعة ليها دفعاتها وعلفها ومصاريفها وأقساطها لوحدها. اختارها من فوق عشان تشوف حساباتها بس.</p></div>
+          <form id="f-farm">
+            <label>اسم المزرعة<input type="text" id="fm-name" required placeholder="المزرعة 3"></label>
+            <label>الحالة<select id="fm-status"><option value="active">شغالة</option><option value="setup">تحت التجهيز</option></select></label>
+            <label>العنوان / ملاحظة<input type="text" id="fm-note" placeholder="اختياري"></label>
+            <button class="btn" type="submit">إضافة المزرعة</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>المزارع</h2>
+          <div id="farms-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const n = v => Number(v) || 0;
+const fmt = (v, d = 0) => Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: d });
+const money = v => fmt(v) + ' ج';
+const sum = (arr, f) => arr.reduce((a, x) => a + n(typeof f === 'function' ? f(x) : x[f]), 0);
+const todayStr = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+const addDays = (s, k) => new Date(Date.parse(s) + k * 86400000).toISOString().slice(0, 10);
+function addMonths(s, k) {
+  const d = new Date(s + 'T00:00:00Z'), day = d.getUTCDate();
+  d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + k);
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, last));
+  return d.toISOString().slice(0, 10);
+}
+const stepDate = (s, every, i) => every === 'week' ? addDays(s, 7 * i) : every === '2week' ? addDays(s, 14 * i) : addMonths(s, i);
+const shortDate = s => s ? new Date(s + 'T00:00:00').toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }) : '';
+const radio = name => document.querySelector(`input[name="${name}"]:checked`)?.value;
+
+const TYPE = { meat: 'تسمين', layer: 'بياض' };
+const SALE = { birds: ['طيور', 'العدد', 'سعر الطائر (جنيه)'], eggs: ['بيض', 'عدد الأطباق', 'سعر الطبق (جنيه)'], manure: ['سبلة', 'الكمية', 'سعر الوحدة (جنيه)'], other: ['أخرى', 'الكمية', 'سعر الوحدة (جنيه)'] };
+const EXP_CATS = ['كتاكيت', 'بطاريات وأقفاص', 'تجهيزات وتوضيب', 'إيجار', 'علف', 'علاج وتحصين', 'تدفئة وغاز', 'كهربا ومياه', 'أجور عمال', 'نشارة وفرشة', 'صيانة', 'نقل', 'أخرى'];
+const SETUP_CATS = ['بطاريات وأقفاص', 'تجهيزات وتوضيب'];
+const EVERY = { month: 'كل شهر', '2week': 'كل أسبوعين', week: 'كل أسبوع' };
+const COLS = ['farms', 'batches', 'daily', 'feedIn', 'sales', 'expenses', 'payments', 'vaccines'];
+const S = { pin: '', name: '', busy: 0, loaded: false, canWrite: true, farm: 'all', payFor: null, openHist: new Set() };
+COLS.forEach(c => S[c] = []);
+try { S.farm = localStorage.getItem('farm') || 'all'; } catch (e) {}
+
+/* ---------- tabs ---------- */
+const TABS = ['home', 'daily', 'batches', 'feed', 'expenses', 'sales', 'vaccines', 'farms'];
+function showTab(t) {
+  if (!TABS.includes(t)) t = 'home';
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== t);
+  try { localStorage.setItem('tab', t); } catch (e) {}
+}
+document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+let startTab = location.hash.slice(1);
+if (!TABS.includes(startTab)) { try { startTab = localStorage.getItem('tab'); } catch (e) {} }
+showTab(startTab);
+
+/* ---------- toast / banner ---------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+function banner(msg) { const b = $('#banner'); b.textContent = msg; b.hidden = !msg; }
+function setReadOnly() {
+  S.canWrite = false;
+  banner('انت فاتح الدفتر للمشاهدة بس. اطلب من صاحب المزرعة يضيفك كـ "محرر" عشان تقدر تسجّل.');
+  document.querySelectorAll('form button, form input, form select').forEach(el => el.disabled = true);
+  render();
+}
+
+/* ---------- farms ---------- */
+const farmsSorted = () => [...S.farms].sort((a, b) => n(a.order) - n(b.order) || (a.name < b.name ? -1 : 1));
+const defaultFarm = () => farmsSorted()[0]?.id || null;
+const farmName = id => S.farms.find(f => f.id === id)?.name || '';
+const batchById = id => S.batches.find(b => b.id === id);
+function farmOf(r) {
+  if (r.farmId) return r.farmId;
+  if (r.batchId) { const b = batchById(r.batchId); if (b) return farmOf(b); }
+  if (r.expenseId) { const e = S.expenses.find(x => x.id === r.expenseId); if (e) return farmOf(e); }
+  return defaultFarm();
+}
+const inFarm = r => S.farm === 'all' || farmOf(r) === S.farm;
+const pickFarm = sel => S.farm !== 'all' ? S.farm : ($(sel).value || defaultFarm());
+function setFarm(id) { S.farm = id; try { localStorage.setItem('farm', id); } catch (e) {} render(); }
+
+/* ---------- calculations ---------- */
+const activeBatches = () => S.batches.filter(b => b.status !== 'closed' && inFarm(b)).sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+function feedTotals(farm = S.farm) {
+  const inF = r => farm === 'all' || farmOf(r) === farm;
+  const fin = S.feedIn.filter(inF), daily = S.daily.filter(inF);
+  const kgIn = sum(fin, f => n(f.bags) * n(f.bagKg));
+  const costIn = sum(fin, f => n(f.bags) * n(f.price));
+  const used = sum(daily, 'feedKg');
+  const t = todayStr(), since = addDays(t, -6);
+  const recent = daily.filter(d => d.date >= since && d.date <= t);
+  const days = new Set(recent.map(d => d.date)).size;
+  const perDay = days ? sum(recent, 'feedKg') / days : 0;
+  return { kgIn, costIn, used, stock: kgIn - used, pricePerKg: kgIn ? costIn / kgIn : 0, perDay, daysLeft: perDay ? (kgIn - used) / perDay : null };
+}
+const paymentsOf = e => S.payments.filter(p => p.expenseId === e.id).sort((a, b) => (a.date < b.date ? -1 : 1));
+const paidOf = e => e.payType === 'credit' ? sum(paymentsOf(e), 'amount') : n(e.amount);
+function debtStatus(e) {
+  const total = n(e.amount), paid = paidOf(e), rem = Math.max(0, total - paid), t = todayStr();
+  const p = e.plan || {}, cnt = n(p.count);
+  let overdue = 0, next = null, each = null, paidCount = 0;
+  if (rem > 0.5 && p.firstDue) {
+    if (cnt > 0) {
+      each = (total - n(e.down)) / cnt;
+      let expected = n(e.down);
+      for (let i = 0; i < cnt; i++) {
+        const d = stepDate(p.firstDue, p.every, i);
+        const cum = n(e.down) + each * (i + 1);
+        if (d <= t) expected = cum;
+        else if (!next && cum - paid > 0.5) next = { date: d, amount: Math.min(each, cum - paid - Math.max(0, expected - paid)) };
+      }
+      overdue = Math.max(0, expected - paid);
+    } else if (p.firstDue <= t) overdue = rem;
+    else next = { date: p.firstDue, amount: rem };
+  }
+  if (cnt > 0 && each) paidCount = Math.min(cnt, Math.floor((paid - n(e.down) + 0.5) / each));
+  return { total, paid, rem, overdue, next, each, cnt, paidCount };
+}
+function batchStats(b) {
+  const logs = S.daily.filter(d => d.batchId === b.id).sort((x, y) => (x.date < y.date ? -1 : 1));
+  const dead = sum(logs, 'dead'), feed = sum(logs, 'feedKg'), eggs = sum(logs, 'eggs');
+  const sales = S.sales.filter(s => s.batchId === b.id);
+  const sold = sum(sales.filter(s => s.kind === 'birds'), 'qty');
+  const live = Math.max(0, n(b.count) - dead - sold);
+  const age = Math.max(0, daysBetween(b.startDate, todayStr())) + n(b.startAge);
+  const wLog = [...logs].reverse().find(l => n(l.weight) > 0);
+  const eggLog = [...logs].reverse().find(l => l.eggs != null && l.eggs !== '');
+  const today = logs.find(l => l.date === todayStr());
+  const mass = wLog ? (live + sold) * n(wLog.weight) / 1000 : 0;
+  const revenue = sum(sales, s => n(s.qty) * n(s.price));
+  const cost = sum(S.expenses.filter(e => e.batchId === b.id && !e.feedInId), 'amount') + feed * feedTotals(farmOf(b)).pricePerKg;
+  return {
+    dead, feed, eggs, sold, live, age, today,
+    mortality: n(b.count) ? dead / n(b.count) * 100 : 0,
+    weight: wLog ? n(wLog.weight) : null,
+    fcr: mass > 0 ? feed / mass : null,
+    laying: eggLog && live ? n(eggLog.eggs) / live * 100 : null,
+    lastEggs: eggLog ? n(eggLog.eggs) : null,
+    revenue, cost, profit: revenue - cost
+  };
+}
+/* money for a farm (or all): accrual cost and actual cash out */
+function farmMoney(farm, month) {
+  const inF = r => (farm === 'all' || farmOf(r) === farm) && (!month || (r.date || '').slice(0, 7) === month);
+  const exps = S.expenses.filter(inF), feeds = S.feedIn.filter(inF), pays = S.payments.filter(inF), sales = S.sales.filter(inF);
+  const cashFeed = sum(feeds.filter(f => f.payType !== 'credit'), f => n(f.bags) * n(f.price));
+  const cashExp = sum(exps.filter(e => e.payType !== 'credit'), 'amount');
+  return {
+    cost: sum(exps, 'amount') + cashFeed,
+    cashOut: cashExp + cashFeed + sum(pays, 'amount'),
+    sales: sum(sales, s => n(s.qty) * n(s.price)),
+    setup: sum(exps.filter(e => SETUP_CATS.includes(e.cat) || e.cat === 'إيجار'), 'amount'),
+    owed: sum(exps.filter(e => e.payType === 'credit'), e => debtStatus(e).rem)
+  };
+}
+
+/* ---------- selects ---------- */
+function fillBatchSelect(sel, { activeOnly = true, blank = null } = {}) {
+  const el = $(sel); const keep = el.value;
+  const list = activeOnly ? activeBatches() : S.batches.filter(inFarm).sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
+  const showFarm = S.farm === 'all' && S.farms.length > 1;
+  el.innerHTML = (blank != null ? `<option value="">${esc(blank)}</option>` : '') +
+    list.map(b => `<option value="${esc(b.id)}">${esc(b.name)} · ${TYPE[b.type] || ''}${showFarm ? ' · ' + esc(farmName(farmOf(b))) : ''}</option>`).join('');
+  if ([...el.options].some(o => o.value === keep)) el.value = keep;
+}
+$('#e-cat').innerHTML = EXP_CATS.map(c => `<option>${c}</option>`).join('');
+$('#exp-filter').innerHTML = '<option value="">كل البنود</option>' + EXP_CATS.map(c => `<option>${c}</option>`).join('');
+
+/* installment plan fields, shared by expense and feed forms */
+function planHTML(p) {
+  return `<div class="grid2">
+      <label>المقدم اللي اتدفع (جنيه)<input type="number" id="${p}-down" min="0" step="any" value="0" inputmode="decimal"></label>
+      <label>عدد الأقساط<input type="number" id="${p}-count" min="0" step="1" value="0" inputmode="numeric"></label>
+    </div>
+    <div class="grid2">
+      <label>القسط بيتدفع<select id="${p}-every"><option value="month">كل شهر</option><option value="2week">كل أسبوعين</option><option value="week">كل أسبوع</option></select></label>
+      <label><span id="${p}-first-lbl">ميعاد أول قسط</span><input type="date" id="${p}-first"></label>
+    </div>
+    <p class="hint" id="${p}-preview"></p>`;
+}
+function readPlan(p) {
+  return { down: n($(`#${p}-down`).value), plan: { count: n($(`#${p}-count`).value), every: $(`#${p}-every`).value, firstDue: $(`#${p}-first`).value || null } };
+}
+function planPreview(p, total) {
+  const { down, plan } = readPlan(p);
+  $(`#${p}-first-lbl`).textContent = plan.count > 0 ? 'ميعاد أول قسط' : 'ميعاد سداد الباقي';
+  const rest = total - down;
+  let msg = '';
+  if (total > 0 && down > total) msg = 'المقدم أكبر من المبلغ الكلي.';
+  else if (total > 0 && plan.count > 0) msg = `القسط ${money(rest / plan.count)} × ${plan.count} ${EVERY[plan.every]}` + (plan.firstDue ? `، أول قسط ${shortDate(plan.firstDue)} وآخر قسط ${shortDate(stepDate(plan.firstDue, plan.every, plan.count - 1))}` : '');
+  else if (total > 0) msg = `الباقي ${money(rest)} ${plan.firstDue ? 'يتدفع يوم ' + shortDate(plan.firstDue) : 'من غير ميعاد محدد'}`;
+  $(`#${p}-preview`).textContent = msg;
+}
+$('#e-plan').innerHTML = planHTML('ep');
+$('#fd-plan').innerHTML = planHTML('fp');
+const expTotal = () => n($('#e-amount').value);
+const feedTotal = () => n($('#fd-bags').value) * n($('#fd-price').value);
+function syncPayForms() {
+  $('#e-plan').hidden = radio('e-pay') !== 'credit';
+  $('#fd-plan').hidden = radio('fd-pay') !== 'credit';
+  planPreview('ep', expTotal());
+  planPreview('fp', feedTotal());
+  const ft = feedTotal(), kg = n($('#fd-bags').value) * n($('#fd-bagkg').value);
+  $('#fd-total').textContent = ft ? `الإجمالي ${money(ft)} لـ ${fmt(kg)} كجم` : '';
+}
+$('#f-exp').addEventListener('input', syncPayForms);
+$('#f-feed').addEventListener('input', syncPayForms);
+
+/* ---------- render ---------- */
+let raf;
+function render() { cancelAnimationFrame(raf); raf = requestAnimationFrame(doRender); }
+function doRender() {
+  if (S.farm !== 'all' && S.loaded &&!S.farms.some(f => f.id === S.farm)) S.farm = 'all';
+  $('#today-label').textContent = new Date().toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  renderFarmBar();
+  fillBatchSelect('#d-batch');
+  fillBatchSelect('#d-filter', { activeOnly: false, blank: 'كل الدفعات' });
+  fillBatchSelect('#s-batch', { blank: 'من غير دفعة' });
+  fillBatchSelect('#e-batch', { activeOnly: false, blank: 'مصروف عام (مش على دفعة)' });
+  fillBatchSelect('#v-batch');
+  syncDailyForm(); syncPayForms();
+  renderHome(); renderDaily(); renderBatches(); renderFeed(); renderExpenses(); renderSales(); renderVaccines(); renderFarms();
+}
+
+function renderFarmBar() {
+  const farms = farmsSorted();
+  $('#farmbar').innerHTML = `<span class="lbl">المزرعة:</span>` +
+    [['all', 'كل المزارع'], ...farms.map(f => [f.id, f.name])].map(([id, name]) =>
+      `<button type="button" data-farm="${esc(id)}" aria-pressed="${S.farm === id}">${esc(name)}</button>`).join('');
+  const opts = farms.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+  document.querySelectorAll('.farm-sel').forEach(sel => { const k = sel.value; sel.innerHTML = opts; if (k && farms.some(f => f.id === k)) sel.value = k; });
+  document.querySelectorAll('.farm-field').forEach(l => l.hidden = S.farm !== 'all' || farms.length < 2);
+}
+
+function emptyStart() {
+  return `<div class="empty"><strong>مفيش دفعات هنا لسه</strong>
+    <ol class="steps"><li>ضيف دفعة من تبويب "الدفعات".</li><li>سجّل علف المخزن من تبويب "العلف".</li><li>كل يوم سجّل النافق والعلف والبيض من "التسجيل اليومي".</li></ol>
+    <button class="btn" type="button" data-goto="batches">إضافة دفعة</button></div>`;
+}
+
+function renderHome() {
+  const t = todayStr(), act = activeBatches(), ft = feedTotals();
+  const stats = act.map(b => [b, batchStats(b)]);
+  const live = sum(stats, ([, s]) => s.live);
+  const todayLogs = S.daily.filter(d => d.date === t && inFarm(d));
+  const eggsToday = sum(todayLogs, 'eggs'), deadToday = sum(todayLogs, 'dead');
+  const debts = S.expenses.filter(e => e.payType === 'credit' && inFarm(e)).map(e => [e, debtStatus(e)]);
+  const owed = sum(debts, ([, d]) => d.rem), overdue = sum(debts, ([, d]) => d.overdue);
+  $('#kpis').innerHTML = `
+    <div class="kpi"><span class="lbl">الطيور الحية</span><span class="val">${fmt(live)}</span><span class="note">في ${act.length} دفعة شغالة</span></div>
+    <div class="kpi egg"><span class="lbl">بيض النهارده</span><span class="val">${fmt(eggsToday)}</span><span class="note">${fmt(Math.floor(eggsToday / 30))} طبق و ${eggsToday % 30} بيضة</span></div>
+    <div class="kpi"><span class="lbl">نافق النهارده</span><span class="val">${fmt(deadToday)}</span><span class="note">${live ? fmt(deadToday / (live + deadToday) * 100, 2) + '٪ من الحي' : '—'}</span></div>
+    <div class="kpi"><span class="lbl">رصيد العلف</span><span class="val">${fmt(ft.stock)} <small style="font-size:.9rem">كجم</small></span><span class="note">${ft.daysLeft != null ? 'يكفي حوالي ' + fmt(ft.daysLeft) + ' يوم' : 'سجّل الصرف اليومي لحساب المدة'}</span></div>
+    <div class="kpi ${overdue > 0 ? 'bad' : ''}"><span class="lbl">باقي عليك (أقساط وآجل)</span><span class="val">${money(owed)}</span><span class="note">${overdue > 0 ? 'منهم ' + money(overdue) + ' متأخر' : 'مفيش حاجة متأخرة'}</span></div>`;
+
+  const al = [];
+  debts.forEach(([e, d]) => {
+    const name = esc(e.title || e.cat) + (S.farm === 'all' && S.farms.length > 1 ? ` (${esc(farmName(farmOf(e)))})` : '');
+    if (d.overdue > 0.5) al.push(['bad', `قسط متأخر: ${name} — ${money(d.overdue)}${e.supplier ? ' لـ ' + esc(e.supplier) : ''}`]);
+    else if (d.next && daysBetween(t, d.next.date) <= 7) {
+      const k = daysBetween(t, d.next.date);
+      al.push(['warn', `قسط ${name} ${k === 0 ? 'النهارده' : k === 1 ? 'بكرة' : 'بعد ' + k + ' أيام'}: ${money(d.next.amount)}`]);
+    }
+  });
+  S.vaccines.filter(v => !v.done && inFarm(v)).sort((a, b) => (a.date < b.date ? -1 : 1)).forEach(v => {
+    const b = batchById(v.batchId); if (!b || b.status === 'closed') return;
+    const d = daysBetween(t, v.date);
+    if (d < 0) al.push(['bad', `${esc(v.name)} لـ ${esc(b.name)} متأخر ${-d} يوم`]);
+    else if (d <= 3) al.push(['warn', `${esc(v.name)} لـ ${esc(b.name)} ${d === 0 ? 'النهارده' : d === 1 ? 'بكرة' : 'بعد ' + d + ' أيام'} (${esc(v.route || '')})`]);
+  });
+  stats.forEach(([b, s]) => {
+    if (!s.today) al.push(['warn', `لسه ماتسجلش يوم النهارده لـ ${esc(b.name)}`]);
+    else if (s.live && n(s.today.dead) / (s.live + n(s.today.dead)) > 0.01) al.push(['bad', `نافق عالي النهارده في ${esc(b.name)}: ${fmt(s.today.dead)} طائر`]);
+  });
+  if (ft.kgIn && ft.daysLeft != null && ft.daysLeft < 5) al.push([ft.daysLeft < 2 ? 'bad' : 'warn', `العلف قرّب يخلص: باقي حوالي ${fmt(ft.daysLeft, 1)} يوم`]);
+  $('#alerts').innerHTML = al.length ? al.map(([c, m]) => `<div class="alert ${c}">${m}</div>`).join('') : '<div class="alert ok">كله تمام. مفيش حاجة متأخرة.</div>';
+
+  $('#home-batches').innerHTML = act.length ? `<div class="cards">${stats.map(([b, s]) => batchCard(b, s, false)).join('')}</div>` : emptyStart();
+
+  const m = farmMoney(S.farm, t.slice(0, 7));
+  const net = m.sales - m.cashOut;
+  $('#month').innerHTML = `<div class="kpis">
+    <div class="kpi"><span class="lbl">دخل (مبيعات)</span><span class="val">${money(m.sales)}</span></div>
+    <div class="kpi"><span class="lbl">خرج (مصاريف وأقساط)</span><span class="val">${money(m.cashOut)}</span></div>
+    <div class="kpi"><span class="lbl">الصافي</span><span class="val ${net >= 0 ? 'money-pos' : 'money-neg'}">${money(net)}</span></div></div>`;
+}
+
+function batchCard(b, s, withActions) {
+  const isLayer = b.type === 'layer';
+  const extra = isLayer
+    ? `<div class="stat"><span class="k">نسبة الإنتاج</span><span class="v">${s.laying != null ? fmt(s.laying, 1) + '٪' : '—'}</span></div>
+       <div class="stat"><span class="k">آخر يوم بيض</span><span class="v">${s.lastEggs != null ? fmt(s.lastEggs) : '—'}</span></div>
+       <div class="stat"><span class="k">إجمالي البيض</span><span class="v">${fmt(s.eggs)}</span></div>`
+    : `<div class="stat"><span class="k">متوسط الوزن</span><span class="v">${s.weight ? fmt(s.weight) + ' جم' : '—'}</span></div>
+       <div class="stat"><span class="k">معامل التحويل</span><span class="v">${s.fcr ? fmt(s.fcr, 2) : '—'}</span></div>
+       <div class="stat"><span class="k">اتباع</span><span class="v">${fmt(s.sold)}</span></div>`;
+  const closed = b.status === 'closed';
+  const farmTag = S.farm === 'all' && S.farms.length > 1 ? esc(farmName(farmOf(b))) + ' · ' : '';
+  return `<article class="card">
+    <header><div><h3>${esc(b.name)}</h3><div class="meta">${farmTag}${b.house ? 'عنبر ' + esc(b.house) + ' · ' : ''}دخلت ${shortDate(b.startDate)} · عمر ${fmt(s.age)} يوم</div></div>
+    <span class="pill ${closed ? 'closed' : isLayer ? 'layer' : 'meat'}">${closed ? 'مقفولة' : TYPE[b.type]}</span></header>
+    <div class="stats">
+      <div class="stat"><span class="k">الحي</span><span class="v">${fmt(s.live)} / ${fmt(b.count)}</span></div>
+      <div class="stat"><span class="k">النافق</span><span class="v">${fmt(s.dead)} (${fmt(s.mortality, 1)}٪)</span></div>
+      <div class="stat"><span class="k">العلف المصروف</span><span class="v">${fmt(s.feed)} كجم</span></div>
+      ${extra}
+    </div>
+    <div class="stats sep">
+      <div class="stat"><span class="k">الإيراد</span><span class="v">${money(s.revenue)}</span></div>
+      <div class="stat"><span class="k">التكلفة</span><span class="v">${money(s.cost)}</span></div>
+      <div class="stat"><span class="k">الربح</span><span class="v ${s.profit >= 0 ? 'money-pos' : 'money-neg'}">${money(s.profit)}</span></div>
+    </div>
+    ${withActions ? `<div class="row-actions">
+      <button class="sm" type="button" data-act="toggle" data-id="${esc(b.id)}">${closed ? 'إعادة فتح' : 'قفل الدفعة'}</button>
+      <button class="sm danger" type="button" data-del="batches" data-id="${esc(b.id)}">حذف</button></div>` : ''}
+  </article>`;
+}
+
+function whoCell(r) { return r.by ? `<span class="who">${esc(r.by)}</span>` : ''; }
+function delBtn(col, id) { return `<button class="sm danger" type="button" data-del="${col}" data-id="${esc(id)}">حذف</button>`; }
+function table(head, rows, empty, foot = '') {
+  if (!rows.length) return `<p class="sub">${empty}</p>`;
+  return `<table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody>${foot}</table>`;
+}
+
+function renderDaily() {
+  const f = $('#d-filter').value;
+  const rows = S.daily.filter(d => inFarm(d) && (!f || d.batchId === f)).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 60);
+  $('#daily-table').innerHTML = table(['التاريخ', 'الدفعة', 'النافق', 'العلف كجم', 'البيض', 'الوزن', 'ملاحظات', 'سجّله', ''],
+    rows.map(d => `<tr><td>${shortDate(d.date)}</td><td>${esc(batchById(d.batchId)?.name || '—')}</td>
+      <td class="num">${fmt(d.dead)}</td><td class="num">${fmt(d.feedKg, 1)}</td><td class="num">${d.eggs != null && d.eggs !== '' ? fmt(d.eggs) : '—'}</td>
+      <td class="num">${n(d.weight) ? fmt(d.weight) : '—'}</td><td>${esc(d.note)}</td><td>${whoCell(d)}</td>
+      <td><div class="row-actions"><button class="sm" type="button" data-edit="${esc(d.id)}">تعديل</button>${delBtn('daily', d.id)}</div></td></tr>`),
+    'مفيش تسجيلات لسه. سجّل أول يوم من الفورم.');
+}
+
+function renderBatches() {
+  const list = S.batches.filter(inFarm).sort((a, b) => ((a.status === 'closed') - (b.status === 'closed')) || (a.startDate < b.startDate ? 1 : -1));
+  $('#all-batches').innerHTML = list.length ? `<div class="cards">${list.map(b => batchCard(b, batchStats(b), true)).join('')}</div>` : '<p class="sub">مفيش دفعات في المزرعة دي لسه.</p>';
+}
+
+function renderFeed() {
+  const ft = feedTotals();
+  $('#feed-kpis').innerHTML = `
+    <div class="kpi"><span class="lbl">الرصيد في المخزن</span><span class="val">${fmt(ft.stock)} كجم</span><span class="note">${fmt(ft.stock / 50, 1)} شكارة (50 كجم)</span></div>
+    <div class="kpi"><span class="lbl">متوسط الصرف اليومي</span><span class="val">${fmt(ft.perDay, 1)} كجم</span><span class="note">آخر 7 أيام</span></div>
+    <div class="kpi"><span class="lbl">يكفي لمدة</span><span class="val">${ft.daysLeft != null ? fmt(ft.daysLeft) + ' يوم' : '—'}</span></div>
+    <div class="kpi"><span class="lbl">متوسط سعر الكيلو</span><span class="val">${ft.pricePerKg ? fmt(ft.pricePerKg, 2) + ' ج' : '—'}</span><span class="note">${ft.pricePerKg ? fmt(ft.pricePerKg * 1000) + ' ج للطن' : ''}</span></div>`;
+  const rows = S.feedIn.filter(inFarm).sort((a, b) => (a.date < b.date ? 1 : -1));
+  $('#feed-table').innerHTML = table(['التاريخ', 'النوع', 'الشكاير', 'الكمية كجم', 'سعر الشكارة', 'الإجمالي', 'الدفع', 'المورد', 'سجّله', ''],
+    rows.map(f => {
+      const e = f.expenseId && S.expenses.find(x => x.id === f.expenseId);
+      const pay = f.payType === 'credit' ? (e ? `آجل · باقي ${money(debtStatus(e).rem)}` : 'آجل') : 'كاش';
+      return `<tr><td>${shortDate(f.date)}</td><td>${esc(f.kind)}</td><td class="num">${fmt(f.bags, 1)}</td><td class="num">${fmt(n(f.bags) * n(f.bagKg))}</td>
+      <td class="num">${money(f.price)}</td><td class="num">${money(n(f.bags) * n(f.price))}</td><td>${pay}</td><td>${esc(f.supplier)}</td><td>${whoCell(f)}</td><td>${delBtn('feedIn', f.id)}</td></tr>`;
+    }),
+    'مفيش علف متسجل. سجّل أول نقلة من الفورم.');
+}
+
+function debtCard(e) {
+  const d = debtStatus(e), pct = d.total ? Math.min(100, d.paid / d.total * 100) : 0;
+  const done = d.rem <= 0.5;
+  const state = done ? '<span class="pill good">خالص</span>' : d.overdue > 0.5 ? '<span class="pill bad">متأخر</span>' : '<span class="pill warn">ماشي</span>';
+  const plan = e.plan || {};
+  const planTxt = d.cnt > 0 ? `${d.cnt} قسط ${EVERY[plan.every] || ''} · قسط ${money(d.each)} · اتدفع ${d.paidCount} من ${d.cnt}` : (plan.firstDue ? `الباقي يتدفع مرة واحدة يوم ${shortDate(plan.firstDue)}` : 'آجل من غير ميعاد محدد');
+  const dueLine = done ? '' : d.overdue > 0.5 ? `<div class="due bad">متأخر ${money(d.overdue)}${d.next ? ` · وبعده ${money(d.next.amount)} يوم ${shortDate(d.next.date)}` : ''}</div>`
+    : d.next ? `<div class="due">القسط الجاي: <b>${money(d.next.amount)}</b> يوم ${shortDate(d.next.date)}</div>` : '';
+  const pays = paymentsOf(e);
+  const farmTag = S.farm === 'all' && S.farms.length > 1 ? esc(farmName(farmOf(e))) + ' · ' : '';
+  return `<article class="card ${S.payFor === e.id ? 'selected' : ''}">
+    <header><div><h3>${esc(e.title || e.cat)}</h3><div class="meta">${farmTag}${esc(e.cat)}${e.supplier ? ' · ' + esc(e.supplier) : ''}${e.batchId ? ' · ' + esc(batchById(e.batchId)?.name || '') : ''}</div></div>${state}</header>
+    <div class="bar" role="img" aria-label="اتدفع ${fmt(pct)}٪"><span style="width:${pct}%"></span></div>
+    <div class="stats">
+      <div class="stat"><span class="k">الإجمالي</span><span class="v">${money(d.total)}</span></div>
+      <div class="stat"><span class="k">اتدفع</span><span class="v">${money(d.paid)}</span></div>
+      <div class="stat"><span class="k">الباقي</span><span class="v ${done ? '' : 'money-neg'}">${money(d.rem)}</span></div>
+    </div>
+    <div class="meta">${planTxt}</div>
+    ${dueLine}
+    <details class="hist" data-hist="${esc(e.id)}" ${S.openHist.has(e.id) ? 'open' : ''}><summary>سجل الدفعات (${pays.length})</summary>
+      <ul>${pays.length ? pays.map(p => `<li><span>${shortDate(p.date)} · <b>${money(p.amount)}</b> ${esc(p.note)} ${whoCell(p)}</span>${delBtn('payments', p.id)}</li>`).join('') : '<li>لسه مفيش دفعات</li>'}</ul>
+    </details>
+    <div class="row-actions">
+      ${done ? '' : `<button class="sm primary" type="button" data-pay="${esc(e.id)}">سجّل دفعة</button>`}
+      ${delBtn('expenses', e.id)}
+    </div>
+  </article>`;
+}
+
+function renderExpenses() {
+  const all = S.expenses.filter(inFarm);
+  const credit = all.filter(e => e.payType === 'credit').map(e => [e, debtStatus(e)]);
+  const owed = sum(credit, ([, d]) => d.rem), overdue = sum(credit, ([, d]) => d.overdue);
+  const fm = farmMoney(S.farm);
+  const in30 = addDays(todayStr(), 30);
+  const due30 = sum(credit, ([e, d]) => {
+    if (d.rem <= 0.5) return 0;
+    const p = e.plan || {};
+    if (!p.firstDue) return 0;
+    if (d.cnt === 0) return p.firstDue <= in30 ? d.rem : 0;
+    let s = d.overdue;
+    for (let i = 0; i < d.cnt; i++) { const dt = stepDate(p.firstDue, p.every, i); if (dt > todayStr() && dt <= in30) s += d.each; }
+    return Math.min(s, d.rem);
+  });
+  $('#debt-kpis').innerHTML = `
+    <div class="kpi"><span class="lbl">إجمالي اللي اتصرف</span><span class="val">${money(fm.cost)}</span><span class="note">كاش + آجل، مع العلف</span></div>
+    <div class="kpi"><span class="lbl">اتدفع فعلاً</span><span class="val">${money(fm.cashOut)}</span></div>
+    <div class="kpi ${owed > 0 ? 'bad' : ''}"><span class="lbl">باقي عليك</span><span class="val">${money(owed)}</span><span class="note">${overdue > 0.5 ? 'منهم ' + money(overdue) + ' متأخر' : 'مفيش متأخرات'}</span></div>
+    <div class="kpi"><span class="lbl">مطلوب خلال 30 يوم</span><span class="val">${money(due30)}</span><span class="note">أقساط ومتأخرات</span></div>`;
+
+  const f = $('#debt-filter').value;
+  const list = credit.filter(([, d]) => f === 'all' || (f === 'open' ? d.rem > 0.5 : d.rem <= 0.5))
+    .sort(([, a], [, b]) => (b.overdue - a.overdue) || ((a.next?.date || '9') < (b.next?.date || '9') ? -1 : 1));
+  $('#debts').innerHTML = list.length ? `<div class="cards">${list.map(([e]) => debtCard(e)).join('')}</div>`
+    : `<p class="sub">${credit.length ? 'مفيش حاجة في العرض ده.' : 'مفيش حاجة بالقسط أو الآجل. لما تسجّل مصروف اختار "آجل / قسط".'}</p>`;
+
+  // by category (feed purchases included from the feed tab)
+  const cats = {};
+  all.forEach(e => { const c = cats[e.cat] || (cats[e.cat] = { total: 0, paid: 0 }); c.total += n(e.amount); c.paid += paidOf(e); });
+  const cashFeed = S.feedIn.filter(x => inFarm(x) && x.payType !== 'credit');
+  if (cashFeed.length) { const c = cats['علف'] || (cats['علف'] = { total: 0, paid: 0 }); const v = sum(cashFeed, x => n(x.bags) * n(x.price)); c.total += v; c.paid += v; }
+  const catRows = Object.entries(cats).sort((a, b) => b[1].total - a[1].total);
+  const tot = catRows.reduce((a, [, c]) => a + c.total, 0), totPaid = catRows.reduce((a, [, c]) => a + c.paid, 0);
+  $('#cat-table').innerHTML = table(['البند', 'الإجمالي', 'اتدفع', 'الباقي', 'النسبة'],
+    catRows.map(([k, c]) => `<tr><td>${esc(k)}</td><td class="num">${money(c.total)}</td><td class="num">${money(c.paid)}</td><td class="num">${c.total - c.paid > 0.5 ? money(c.total - c.paid) : '—'}</td><td class="num">${tot ? fmt(c.total / tot * 100) + '٪' : ''}</td></tr>`),
+    'مفيش مصاريف لسه.',
+    `<tfoot><tr><td>الإجمالي</td><td class="num">${money(tot)}</td><td class="num">${money(totPaid)}</td><td class="num">${money(tot - totPaid)}</td><td></td></tr></tfoot>`);
+
+  const cf = $('#exp-filter').value;
+  const rows = all.filter(e => !cf || e.cat === cf).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 100);
+  $('#exp-table').innerHTML = table(['التاريخ', 'البند', 'الوصف', 'المبلغ', 'الدفع', 'الدفعة', 'المورد', 'سجّله', ''],
+    rows.map(e => `<tr><td>${shortDate(e.date)}</td><td>${esc(e.cat)}</td><td>${esc(e.title || e.note)}</td><td class="num">${money(e.amount)}</td>
+      <td>${e.payType === 'credit' ? 'قسط · باقي ' + money(debtStatus(e).rem) : 'كاش'}</td><td>${esc(batchById(e.batchId)?.name || 'عام')}</td><td>${esc(e.supplier)}</td><td>${whoCell(e)}</td><td>${delBtn('expenses', e.id)}</td></tr>`),
+    'مفيش مصاريف لسه.');
+
+  // payment panel
+  const pe = S.payFor && S.expenses.find(x => x.id === S.payFor);
+  $('#pay-panel').hidden = !pe;
+  if (pe) {
+    const d = debtStatus(pe);
+    $('#pay-for').textContent = `${pe.title || pe.cat}${pe.supplier ? ' · ' + pe.supplier : ''} — الباقي ${money(d.rem)}`;
+    const amt = n($('#p-amount').value);
+    $('#p-warn').hidden = !(amt > d.rem + 0.5);
+    $('#p-warn').textContent = 'المبلغ أكبر من الباقي.';
+  }
+}
+
+function renderSales() {
+  const sales = S.sales.filter(inFarm).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 100);
+  $('#sales-table').innerHTML = table(['التاريخ', 'الصنف', 'الدفعة', 'الكمية', 'السعر', 'الإجمالي', 'العميل', 'سجّله', ''],
+    sales.map(s => `<tr><td>${shortDate(s.date)}</td><td>${SALE[s.kind]?.[0] || ''}</td><td>${esc(batchById(s.batchId)?.name || '—')}</td>
+      <td class="num">${fmt(s.qty, 1)}</td><td class="num">${money(s.price)}</td><td class="num">${money(n(s.qty) * n(s.price))}</td><td>${esc(s.customer)}</td><td>${whoCell(s)}</td><td>${delBtn('sales', s.id)}</td></tr>`),
+    'مفيش مبيعات لسه.');
+}
+
+function renderVaccines() {
+  const t = todayStr();
+  const rows = S.vaccines.filter(inFarm).sort((a, b) => (a.done - b.done) || (a.date < b.date ? -1 : 1));
+  $('#vac-table').innerHTML = table(['الميعاد', 'الدفعة', 'عمرها ساعتها', 'التحصين / العلاج', 'الطريقة', 'ملاحظة', 'الحالة', ''],
+    rows.map(v => {
+      const b = batchById(v.batchId);
+      const age = b ? daysBetween(b.startDate, v.date) + n(b.startAge) : null;
+      const d = daysBetween(t, v.date);
+      const state = v.done ? `<span class="pill closed">اتعمل ${shortDate(v.doneDate)}</span>`
+        : d < 0 ? '<span class="pill bad">متأخر</span>' : d <= 3 ? '<span class="pill warn">قريب</span>' : '<span class="pill closed">مستني</span>';
+      return `<tr class="${v.done ? 'done' : ''}"><td>${shortDate(v.date)}</td><td>${esc(b?.name || '—')}</td><td class="num">${age != null ? age + ' يوم' : ''}</td>
+        <td>${esc(v.name)}</td><td>${esc(v.route)}</td><td>${esc(v.note)}</td><td>${state}</td>
+        <td><div class="row-actions">${v.done ? '' : `<button class="sm" type="button" data-vdone="${esc(v.id)}">تم</button>`}${delBtn('vaccines', v.id)}</div></td></tr>`;
+    }), 'مفيش مواعيد في الجدول.');
+}
+
+function renderFarms() {
+  const farms = farmsSorted();
+  $('#farms-list').innerHTML = farms.length ? `<div class="cards">${farms.map(f => {
+    const m = farmMoney(f.id), batches = S.batches.filter(b => farmOf(b) === f.id);
+    const act = batches.filter(b => b.status !== 'closed');
+    const live = sum(act, b => batchStats(b).live);
+    const hasData = batches.length || S.expenses.some(e => farmOf(e) === f.id) || S.feedIn.some(x => farmOf(x) === f.id) || S.sales.some(x => farmOf(x) === f.id);
+    return `<article class="card">
+      <header><div><h3>${esc(f.name)}</h3><div class="meta">${esc(f.note || '')}</div></div>
+        <span class="pill ${f.status === 'setup' ? 'setup' : 'good'}">${f.status === 'setup' ? 'تحت التجهيز' : 'شغالة'}</span></header>
+      <div class="stats">
+        <div class="stat"><span class="k">دفعات شغالة</span><span class="v">${act.length}</span></div>
+        <div class="stat"><span class="k">طيور حية</span><span class="v">${fmt(live)}</span></div>
+        <div class="stat"><span class="k">تجهيزات وإيجار</span><span class="v">${money(m.setup)}</span></div>
+      </div>
+      <div class="stats sep">
+        <div class="stat"><span class="k">إجمالي المصروف</span><span class="v">${money(m.cost)}</span></div>
+        <div class="stat"><span class="k">اتدفع</span><span class="v">${money(m.cashOut)}</span></div>
+        <div class="stat"><span class="k">باقي عليها</span><span class="v ${m.owed > 0.5 ? 'money-neg' : ''}">${money(m.owed)}</span></div>
+        <div class="stat"><span class="k">المبيعات</span><span class="v">${money(m.sales)}</span></div>
+        <div class="stat"><span class="k">الصافي لحد دلوقتي</span><span class="v ${m.sales - m.cost >= 0 ? 'money-pos' : 'money-neg'}">${money(m.sales - m.cost)}</span></div>
+      </div>
+      <div class="row-actions">
+        <button class="sm primary" type="button" data-farm="${esc(f.id)}">افتح حساباتها</button>
+        <button class="sm" type="button" data-fstatus="${esc(f.id)}">${f.status === 'setup' ? 'بقت شغالة' : 'رجّعها تحت التجهيز'}</button>
+        ${hasData ? '' : delBtn('farms', f.id)}
+      </div>
+    </article>`;
+  }).join('')}</div>` : '<p class="sub">مفيش مزارع لسه. ضيف أول مزرعة من الفورم.</p>';
+}
+
+/* ---------- server (Google Sheet through Apps Script) ----------
+   Inside Apps Script the page talks through google.script.run; hosted anywhere else it posts
+   to the web app URL without cookies, so a phone signed in to several Google accounts still works. */
+const API_URL = 'https://script.google.com/macros/s/AKfycbze-_I7g9x9hM5oMZ1i6NyAoXogcigk23_F3wxhn5qIc-mmMIOlb2JG1yE7-TRAYcMV/exec';
+async function api(fn, ...args) {
+  if (window.google?.script?.run) {
+    return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args));
+  }
+  const r = await fetch(API_URL, {
+    method: 'POST', credentials: 'omit', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn, args })
+  });
+  const out = await r.json();
+  if (!out.ok) throw new Error(out.error);
+  return out.data;
+}
+const isPinError = e => String(e?.message || e).includes('PIN');
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function setSync(state) {
+  const el = $('#sync');
+  el.classList.toggle('ok', state === 'ok'); el.classList.toggle('err', state === 'err');
+  el.textContent = state === 'ok' ? 'متزامن ' + new Date().toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' })
+    : state === 'saving' ? 'بيحفظ…' : state === 'loading' ? 'بيحمّل…' : 'مفيش اتصال';
+}
+async function refresh() {
+  setSync('loading');
+  try {
+    const data = await api('loadAll', S.pin);
+    COLS.forEach(c => S[c] = data[c] || []);
+    S.loaded = true; setSync('ok'); render();
+  } catch (e) {
+    if (isPinError(e)) showGate('الرقم السري اتغيّر. اكتبه تاني.');
+    else setSync('err');
+  }
+}
+
+/* ---------- writes ---------- */
+async function save(col, id, data) {
+  id = id || newId();
+  const doc = { ...data, by: S.name };
+  S.busy++; setSync('saving');
+  try {
+    await api('saveDoc', S.pin, col, id, doc);
+    const rec = { id, ...doc, at: new Date().toISOString() };
+    const i = S[col].findIndex(x => x.id === id);
+    if (i >= 0) S[col][i] = rec; else S[col].push(rec);
+    setSync('ok'); render();
+    return true;
+  } catch (e) {
+    setSync('err');
+    if (isPinError(e)) showGate('الرقم السري اتغيّر. اكتبه تاني.');
+    else toast('ماتحفظش. اتأكد من النت وجرّب تاني.');
+    return false;
+  } finally { S.busy--; }
+}
+async function remove(col, id) {
+  const items = [[col, id]];
+  if (col === 'expenses' || col === 'feedIn') {
+    const e = col === 'expenses' ? S.expenses.find(x => x.id === id) : S.expenses.find(x => x.feedInId === id);
+    if (e) {
+      paymentsOf(e).forEach(p => items.push(['payments', p.id]));
+      if (col === 'feedIn') items.push(['expenses', e.id]);
+      if (col === 'expenses' && e.feedInId) items.push(['feedIn', e.feedInId]);
+    }
+    if (S.payFor === id) S.payFor = null;
+  }
+  S.busy++; setSync('saving');
+  try {
+    await api('deleteDocs', S.pin, items);
+    items.forEach(([c, i]) => S[c] = S[c].filter(x => x.id !== i));
+    setSync('ok'); render(); toast('اتحذف');
+  } catch (e) { setSync('err'); toast('ماتحذفش. جرّب تاني.'); }
+  finally { S.busy--; }
+}
+async function saveCredit(expId, base, prefix, date) {
+  const { down, plan } = readPlan(prefix);
+  if (down > n(base.amount)) { toast('المقدم أكبر من المبلغ الكلي'); return false; }
+  const ok = await save('expenses', expId, { ...base, payType: 'credit', down, plan });
+  if (ok && down > 0) await save('payments', null, { expenseId: expId, farmId: base.farmId, date, amount: down, note: 'مقدم' });
+  return ok;
+}
+function resetPlan(p) { $(`#${p}-down`).value = 0; $(`#${p}-count`).value = 0; $(`#${p}-first`).value = ''; }
+
+/* daily form */
+function syncDailyForm() {
+  const b = batchById($('#d-batch').value);
+  $('#w-eggs').hidden = b?.type === 'meat';
+  $('#w-weight').hidden = b?.type === 'layer';
+  const id = b && $('#d-date').value ? `${b.id}_${$('#d-date').value}` : null;
+  $('#d-exists').hidden = !S.daily.some(d => d.id === id);
+}
+function loadDaily() {
+  const id = `${$('#d-batch').value}_${$('#d-date').value}`;
+  const d = S.daily.find(x => x.id === id);
+  $('#d-dead').value = d?.dead ?? ''; $('#d-feed').value = d?.feedKg ?? ''; $('#d-eggs').value = d?.eggs ?? '';
+  $('#d-weight').value = d?.weight ?? ''; $('#d-note').value = d?.note ?? '';
+  syncDailyForm();
+}
+$('#d-batch').addEventListener('change', loadDaily);
+$('#d-date').addEventListener('change', loadDaily);
+$('#d-filter').addEventListener('change', renderDaily);
+$('#debt-filter').addEventListener('change', renderExpenses);
+$('#exp-filter').addEventListener('change', renderExpenses);
+$('#p-amount').addEventListener('input', renderExpenses);
+$('#f-daily').addEventListener('submit', async e => {
+  e.preventDefault();
+  const batchId = $('#d-batch').value, date = $('#d-date').value;
+  if (!batchId) { toast('اختار الدفعة الأول'); return; }
+  const b = batchById(batchId);
+  const ok = await save('daily', `${batchId}_${date}`, {
+    batchId, farmId: farmOf(b), date, dead: n($('#d-dead').value), feedKg: n($('#d-feed').value),
+    eggs: b?.type === 'meat' ? null : n($('#d-eggs').value),
+    weight: b?.type === 'layer' ? null : (n($('#d-weight').value) || null),
+    note: $('#d-note').value.trim()
+  });
+  if (ok) toast('اتسجل يوم ' + shortDate(date) + ' لـ ' + (b?.name || ''));
+});
+
+/* batch form */
+$('#f-batch').addEventListener('submit', async e => {
+  e.preventDefault();
+  const ok = await save('batches', null, {
+    farmId: pickFarm('#b-farm'), name: $('#b-name').value.trim(), type: $('#b-type').value, house: $('#b-house').value.trim(),
+    startDate: $('#b-start').value, count: n($('#b-count').value), startAge: n($('#b-age').value), status: 'active'
+  });
+  if (ok) { toast('الدفعة اتضافت'); $('#b-name').value = ''; $('#b-count').value = ''; }
+});
+
+/* feed form */
+$('#f-feed').addEventListener('submit', async e => {
+  e.preventDefault();
+  const farmId = pickFarm('#fd-farm'), date = $('#fd-date').value, credit = radio('fd-pay') === 'credit';
+  const feed = { farmId, date, kind: $('#fd-kind').value.trim(), bags: n($('#fd-bags').value), bagKg: n($('#fd-bagkg').value) || 50,
+    price: n($('#fd-price').value), supplier: $('#fd-supplier').value.trim(), payType: credit ? 'credit' : 'cash' };
+  const feedId = newId('feedIn');
+  let ok;
+  if (credit) {
+    const expId = newId('expenses');
+    ok = await saveCredit(expId, { farmId, date, cat: 'علف', title: `علف ${feed.kind} ${fmt(feed.bags, 1)} شكارة`, amount: feed.bags * feed.price,
+      batchId: null, supplier: feed.supplier, feedInId: feedId, note: '' }, 'fp', date);
+    if (ok) ok = await save('feedIn', feedId, { ...feed, expenseId: expId });
+  } else ok = await save('feedIn', feedId, feed);
+  if (ok) { toast('العلف اتضاف للمخزن'); $('#fd-bags').value = ''; resetPlan('fp'); syncPayForms(); }
+});
+
+/* expense form */
+$('#f-exp').addEventListener('submit', async e => {
+  e.preventDefault();
+  const batchId = $('#e-batch').value || null;
+  const farmId = batchId ? farmOf(batchById(batchId)) : pickFarm('#e-farm');
+  const date = $('#e-date').value;
+  const base = { farmId, date, cat: $('#e-cat').value, title: $('#e-title').value.trim(), amount: n($('#e-amount').value),
+    batchId, supplier: $('#e-supplier').value.trim(), note: $('#e-note').value.trim() };
+  const ok = radio('e-pay') === 'credit' ? await saveCredit(newId('expenses'), base, 'ep', date) : await save('expenses', null, { ...base, payType: 'cash' });
+  if (ok) { toast('اتسجل'); ['#e-title', '#e-amount', '#e-supplier', '#e-note'].forEach(s => $(s).value = ''); resetPlan('ep'); syncPayForms(); }
+});
+
+/* payment form */
+function openPay(id) {
+  const e = S.expenses.find(x => x.id === id); if (!e) return;
+  S.payFor = id;
+  const d = debtStatus(e);
+  $('#p-date').value = todayStr(); $('#p-note').value = '';
+  $('#p-amount').value = Math.round(d.overdue > 0.5 ? d.overdue : d.next ? d.next.amount : d.rem);
+  renderExpenses();
+  $('#pay-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+$('#p-cancel').addEventListener('click', () => { S.payFor = null; renderExpenses(); });
+$('#f-pay').addEventListener('submit', async e => {
+  e.preventDefault();
+  const exp = S.expenses.find(x => x.id === S.payFor); if (!exp) return;
+  const ok = await save('payments', null, { expenseId: exp.id, farmId: farmOf(exp), date: $('#p-date').value, amount: n($('#p-amount').value), note: $('#p-note').value.trim() });
+  if (ok) { toast('الدفعة اتسجلت'); S.payFor = null; renderExpenses(); }
+});
+
+/* sale form */
+function syncSale() {
+  const k = SALE[$('#s-kind').value];
+  $('#s-qty-lbl').textContent = k[1]; $('#s-price-lbl').textContent = k[2];
+  const tot = n($('#s-qty').value) * n($('#s-price').value);
+  $('#s-total').textContent = tot ? 'الإجمالي: ' + money(tot) : '';
+}
+['#s-kind', '#s-qty', '#s-price'].forEach(s => $(s).addEventListener('input', syncSale));
+$('#f-sale').addEventListener('submit', async e => {
+  e.preventDefault();
+  const batchId = $('#s-batch').value || null;
+  const ok = await save('sales', null, {
+    farmId: batchId ? farmOf(batchById(batchId)) : pickFarm('#s-farm'),
+    date: $('#s-date').value, kind: $('#s-kind').value, batchId,
+    qty: n($('#s-qty').value), price: n($('#s-price').value), customer: $('#s-customer').value.trim()
+  });
+  if (ok) { toast('البيعة اتسجلت'); $('#s-qty').value = ''; $('#s-customer').value = ''; syncSale(); }
+});
+
+/* vaccine form */
+$('#f-vac').addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = batchById($('#v-batch').value);
+  if (!b) { toast('اختار الدفعة الأول'); return; }
+  const ok = await save('vaccines', null, {
+    batchId: b.id, farmId: farmOf(b), name: $('#v-name').value.trim(), date: $('#v-date').value,
+    route: $('#v-route').value, note: $('#v-note').value.trim(), done: false
+  });
+  if (ok) { toast('اتضاف للجدول'); $('#v-name').value = ''; $('#v-note').value = ''; }
+});
+
+/* farm form */
+$('#f-farm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const ok = await save('farms', null, { name: $('#fm-name').value.trim(), status: $('#fm-status').value, note: $('#fm-note').value.trim(), order: S.farms.length + 1 });
+  if (ok) { toast('المزرعة اتضافت'); $('#fm-name').value = ''; $('#fm-note').value = ''; }
+});
+
+/* clicks: delete with in-page confirm, edit, toggles, farm switch */
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  if (btn.dataset.farm) { setFarm(btn.dataset.farm); if (btn.closest('#farms-list')) showTab('home'); return; }
+  if (btn.dataset.goto) return showTab(btn.dataset.goto);
+  if (btn.dataset.del) {
+    if (!S.canWrite) return toast('انت فاتح للمشاهدة بس.');
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed'); btn.textContent = 'متأكد؟';
+      setTimeout(() => { btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 3000);
+      return;
+    }
+    return remove(btn.dataset.del, btn.dataset.id);
+  }
+  if (btn.dataset.pay) return openPay(btn.dataset.pay);
+  if (btn.dataset.edit) {
+    const d = S.daily.find(x => x.id === btn.dataset.edit); if (!d) return;
+    fillBatchSelect('#d-batch', { activeOnly: false });
+    $('#d-batch').value = d.batchId; $('#d-date').value = d.date; loadDaily();
+    $('#f-daily').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (btn.dataset.act === 'toggle') {
+    const b = batchById(btn.dataset.id); if (!b) return;
+    const { id, by, at, ...rest } = b;
+    if (await save('batches', id, { ...rest, farmId: farmOf(b), status: b.status === 'closed' ? 'active' : 'closed' })) toast('اتحدّثت');
+    return;
+  }
+  if (btn.dataset.fstatus) {
+    const f = S.farms.find(x => x.id === btn.dataset.fstatus); if (!f) return;
+    const { id, by, at, ...rest } = f;
+    if (await save('farms', id, { ...rest, status: f.status === 'setup' ? 'active' : 'setup' })) toast('اتحدّثت');
+    return;
+  }
+  if (btn.dataset.vdone) {
+    const v = S.vaccines.find(x => x.id === btn.dataset.vdone); if (!v) return;
+    const { id, by, at, ...rest } = v;
+    if (await save('vaccines', id, { ...rest, done: true, doneDate: todayStr() })) toast('اتعلّم إنه اتعمل');
+  }
+});
+document.addEventListener('toggle', e => {
+  const id = e.target?.dataset?.hist; if (!id) return;
+  if (e.target.open) S.openHist.add(id); else S.openHist.delete(id);
+}, true);
+
+/* default dates */
+['#d-date', '#b-start', '#fd-date', '#s-date', '#e-date', '#v-date', '#p-date'].forEach(s => $(s).value = todayStr());
+syncSale();
+render();
+
+/* ---------- sign-in with farm PIN, then load and keep refreshing ---------- */
+function showGate(msg) {
+  $('#app').hidden = true; $('#gate').hidden = false;
+  $('#g-err').hidden = !msg; $('#g-err').textContent = msg || '';
+  $('#g-name').value = S.name || '';
+}
+function enterApp() {
+  $('#gate').hidden = true; $('#app').hidden = false;
+  $('#me').innerHTML = `${esc(S.name)} · <button type="button" id="logout">تغيير</button>`;
+  refresh();
+}
+$('#f-gate').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pin = $('#g-pin').value.trim(), name = $('#g-name').value.trim();
+  $('#g-btn').disabled = true; $('#g-err').hidden = true;
+  try {
+    await api('checkPin', pin);
+    S.pin = pin; S.name = name;
+    try { localStorage.setItem('pin', pin); localStorage.setItem('name', name); } catch (err) {}
+    enterApp();
+  } catch (err) {
+    $('#g-err').hidden = false;
+    $('#g-err').textContent = isPinError(err) ? 'الرقم السري غلط.' : 'مفيش اتصال. اتأكد من النت وجرّب تاني.';
+  } finally { $('#g-btn').disabled = false; }
+});
+document.addEventListener('click', e => {
+  if (e.target.id === 'logout') {
+    try { localStorage.removeItem('pin'); } catch (err) {}
+    S.pin = ''; showGate();
+  }
+});
+$('#refresh').addEventListener('click', refresh);
+setInterval(() => { if (S.pin && !document.hidden && !S.busy) refresh(); }, 30000);
+document.addEventListener('visibilitychange', () => { if (S.pin && !document.hidden && !S.busy) refresh(); });
+
+try { S.pin = localStorage.getItem('pin') || ''; S.name = localStorage.getItem('name') || ''; } catch (e) {}
+if (S.pin && S.name) enterApp(); else showGate();
+if ('serviceWorker' in navigator && !window.google?.script && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
